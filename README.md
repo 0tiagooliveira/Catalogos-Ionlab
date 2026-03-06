@@ -1,6 +1,6 @@
 # Portal de Catálogos da IONLAB 🔬
 
-Fala pessoal! Aqui é o Tiago, e esse é o repositório do novo portal de catálogos que desenvolvi pra **IONLAB**. 
+Fala pessoal!
 
 Eu precisava criar uma forma fácil e super rápida para os clientes (e também pra equipe de vendas) encontrarem nossos equipamentos, manuais e catálogos. A ideia principal era sair de listas manuais e ter algo dinâmico, rápido e que rodasse bem até na internet móvel num celular.
 
