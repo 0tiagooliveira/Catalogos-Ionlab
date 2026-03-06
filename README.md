@@ -1,20 +1,44 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Catálogos IONLAB
 
-# Run and deploy your AI Studio app
+Bem-vindo ao repositório oficial do sistema de **Catálogos da IONLAB**, desenvolvido por **Tiago**! 🚀
 
-This contains everything you need to run your app locally.
+Este projeto é uma plataforma ágil e moderna de busca e visualização de catálogos de equipamentos laboratoriais.
 
-View your app in AI Studio: https://ai.studio/apps/aab06695-e2d3-46c1-b0d1-4cbcc0b763d7
+## ✨ Funcionalidades (Features)
 
-## Run Locally
+- **Busca Inteligente:** Motor de pesquisa tolerante a erros de acentuação (Ex: "centrifuga" / "centrífuga" retornam o mesmo resultado).
+- **Categorização Dinâmica:** Listagem elegante em Dropdown com contadores automáticos de produtos.
+- **Tag de Descontinuação:** Sinalizador visual moderno e vermelho para equipamentos que não são mais fabricados.
+- **Rastreamento GA4:** Medição de todos os termos de pesquisa pelo Google Analytics (o que os clientes mais procuram!).
+- **Animações Fluidas:** Transições otimizadas com Framer Motion (Fade in up inteligente).
+- **One-Click Deploy:** Tudo (GitHub, Construção do App e Hosting na Nuvem da Google) através de um único clique num script Batch personalizado!
 
-**Prerequisites:**  Node.js
+## 🛠️ Tecnologias Utilizadas
 
+- **React.js 19** + **Vite**
+- **TypeScript**
+- **Tailwind CSS**
+- **Framer Motion**
+- **Firebase Hosting**
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🚀 Como executar o projeto localmente
+
+1. Instalar as dependências do projeto:
+   ```bash
+   npm install
+   ```
+2. Inicializar o servidor (Vite):
+   ```bash
+   npm run dev
+   ```
+
+## 🌍 Como realizar o Deploy (Atualizar o site)
+
+Basta dar dois cliques no script:
+```
+deploy.bat
+```
+Ele vai automaticamente salvar no GitHub, fazer a `build` das pastas do React e dar `deploy` através da API para o Firebase.
+
+---
+*Desenvolvido com 💙 por Tiago para a IONLAB.*
