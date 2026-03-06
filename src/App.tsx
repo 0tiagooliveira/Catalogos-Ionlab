@@ -47,10 +47,19 @@ export default function App() {
 
   // Filter logic
   const filteredData = useMemo(() => {
+    // Função para remover acentuação
+    const removeAccents = (str: string) => {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    };
+
     return catalogData.filter((item) => {
+      const normalizedSearchTerm = removeAccents(searchTerm.toLowerCase());
+      const normalizedNome = removeAccents(item.nome.toLowerCase());
+      const normalizedCategoria = removeAccents(item.categoria.toLowerCase());
+
       const matchesSearch =
-        item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.categoria.toLowerCase().includes(searchTerm.toLowerCase());
+        normalizedNome.includes(normalizedSearchTerm) ||
+        normalizedCategoria.includes(normalizedSearchTerm);
       
       if (searchTerm) {
         return matchesSearch;
