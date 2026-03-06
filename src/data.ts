@@ -3,6 +3,7 @@ export interface Product {
   nome: string;
   link: string;
   imagem?: string;
+  descontinuado?: boolean;
 }
 
 export const catalogData: Product[] = [
@@ -30,7 +31,7 @@ export const catalogData: Product[] = [
   { categoria: "ESPECTOFOTOMETRO", nome: "Espectrofotômetro TouchScreen NanoReady - NE-2100-BI e NE-3100-BI", link: "https://drive.google.com/open?id=1_boKNDwVivFAa36DZ32-NwnGDVpCLCGv&usp=drive_fs", imagem: "https://i.ibb.co/yc33GCf9/Espectrofot-metro-Touch-Screen-Nano-Ready-NE-2100-BI-e-NE-3100-BI.png" },
   { categoria: "INCUBADORA", nome: "Incubadora B.O.D", link: "https://drive.google.com/drive/folders/1vvlHzK3nBKasY-Jv0qDeedIicNXWfx-i?usp=drive_link", imagem: "https://i.ibb.co/WN5240Jz/Incubadora-B-O-D.png" },
   { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital BIA-4000", link: "https://drive.google.com/open?id=13dMdY10ojIiNIv0uOlaYFYQ46_-44eC8&usp=drive_fs", imagem: "https://i.ibb.co/CKrYdVS7/Centr-fuga-Digital-BIA-4000-Bl.png" },
-  { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital BIA-4000-P", link: "https://drive.google.com/open?id=1IM3YnEt1pvLhJbUhsCzOk14mu26Y6R3Z&usp=drive_fs", imagem: "https://i.ibb.co/hF99NtRb/Centr-fuga-Digital-BIA-4000-Bl-P.png" },
+  { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital BIA-4000-P", link: "https://drive.google.com/open?id=1IM3YnEt1pvLhJbUhsCzOk14mu26Y6R3Z&usp=drive_fs", imagem: "https://i.ibb.co/hF99NtRb/Centr-fuga-Digital-BIA-4000-Bl-P.png", descontinuado: true },
   { categoria: "MICROSCOPIA", nome: "Câmera Digital para Microscópio 10.5mp HDMI BIO-HDMI", link: "https://drive.google.com/open?id=1C9bn3-CUKtQzyISKaIyYDkpFvASVegrC&usp=drive_fs", imagem: "https://i.ibb.co/YKDz3jH/C-mera-Digital-para-Microsc-pio-10-5mp-HDMI-BIO-HDMI.png" },
   { categoria: "MICROSCOPIA", nome: "Microscópio Biológico Trinocular com Ótica Infinita e Polarização BLUE1000-T-I-L-P-BI", link: "https://drive.google.com/open?id=15me4z8-Mx20gEegL8YZ6MYI3w--0qYdb&usp=drive_fs", imagem: "https://i.ibb.co/RxV0WW7/Microsc-pio-Biol-gico-Trinocular-com-tica-Infinita-e-Polariza-o-BLUE1000-T-I-L-P-BI-BLUE1600-T.png" },
   { categoria: "MICROSCOPIA", nome: "Microscópio Biológico Binocular com Ótica Infinita e Contraste de Fase BLUE1000-B-I-L-CF", link: "https://drive.google.com/open?id=159uiPTr5vGRD3cVr3vdkiLrtkFFDB1pM&usp=drive_fs", imagem: "https://i.ibb.co/6RHjmtsC/Microsc-pio-Biol-gico-Binocular-com-tica-Infinita-e-Contraste-de-Fase-BLUE1000-B-I-L-CF-BI-BLUE.png" },
@@ -67,7 +68,7 @@ export const catalogData: Product[] = [
   { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital Refrigerada CDR-16000", link: "https://drive.google.com/drive/folders/1qAyORokbPbemJCQ52ZdDBKdsceRts7iZ?usp=drive_link", imagem: "https://i.ibb.co/wNrkXGgS/Centr-fuga-Digital-Refrigerada-CDR-16000.png" },
   { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital Refrigerada CDR-22000", link: "https://drive.google.com/drive/folders/1t5qgsvoWEYZU0T6i1z-_uRwqGoSVpirg?usp=drive_link", imagem: "https://i.ibb.co/KxvfLgX3/Centr-fuga-Digital-Refrigerada-CDR-22000.png" },
   { categoria: "CÉLULAS DE CONDUTIVIDADE", nome: "Células de Condutividade Séries", link: "https://drive.google.com/open?id=1d8mFB18UHhEsMgrHFGufQqeGNEuAWeVX&usp=drive_fs", imagem: "https://i.ibb.co/VpjG7jyH/C-lulas-de-Condutividade-S-ries.png" },
-  { categoria: "CHAPA AQUECEDORA", nome: "Chapa Aquecedora Digital Microprocessado até 300°C CA I", link: "https://drive.google.com/drive/folders/1XyMpbrZafflYBp6a7tJcXJGkfzGT-Svg?usp=drive_link", imagem: "https://i.ibb.co/gM6XPgXf/Chapa-Aquecedora-Digital-Microprocessado-at-300-C-CA-I.png" },
+  { categoria: "CHAPA AQUECEDORA", nome: "Chapa Aquecedora Digital Microprocessado até 300°C CAI", link: "https://drive.google.com/drive/folders/1XyMpbrZafflYBp6a7tJcXJGkfzGT-Svg?usp=drive_link", imagem: "https://i.ibb.co/gM6XPgXf/Chapa-Aquecedora-Digital-Microprocessado-at-300-C-CA-I.png", descontinuado: true },
   { categoria: "CENTRIFUGAS", nome: "Centrífuga Analógica para Microhematócritos CM12000", link: "https://drive.google.com/open?id=1YbZuhIEGsLBUYPXRzr63Qk3O7TkNqD4L&usp=drive_fs", imagem: "https://i.ibb.co/6RKnQKX7/Centr-fuga-Anal-gica-para-Microhemat-critos-CM12000.png" },
   { categoria: "CONDUTIVÍMETRO", nome: "Condutivímetro Portátil CON500-NM", link: "https://drive.google.com/open?id=1J103dHTUb2EGs6QfQSQifFWLjm36L0i3&usp=drive_fs", imagem: "https://i.ibb.co/nMZBcC4J/Condutiv-metro-Port-til-CON500-NM.png" },
   { categoria: "CONTADOR DE COLÔNIAS", nome: "Contador de Colônias BIOCC-NM-BI", link: "https://drive.google.com/drive/folders/1ijKxfICNQLCmFgiW3J_PaSClwRhTpTxb?usp=drive_link", imagem: "https://i.ibb.co/KjmgKqsr/Contador-de-Col-nias-BIOCC-NM-BI.png" },
@@ -75,8 +76,8 @@ export const catalogData: Product[] = [
   { categoria: "ANALISADORES", nome: "Analisador Químico Semiautomático DKP-620", link: "https://drive.google.com/open?id=1AvtMz6qyZG4-nPhsgNn-sF2GD7oudnjc&usp=drive_fs", imagem: "https://i.ibb.co/N23t3ZtP/Analisador-qu-mico-semiautom-tico-DKP-620.png" },
   { categoria: "CONTADORES", nome: "Contador Digital de Células Sanguíneas DL-2000-A", link: "https://drive.google.com/open?id=16k3TudhL5uWs4GD5K8sbteP7aqGJy9qF&usp=drive_fs", imagem: "https://i.ibb.co/9HVBsndW/Contador-Digital-de-C-lulas-Sangu-neas-DL-2000-A.png" },
   { categoria: "CONDUTIVÍMETRO", nome: "Condutivímetro de Bancada com TDS DS-703A-BI", link: "https://drive.google.com/open?id=1u0KrPYagsAfG6NHWDSMv3kJxpW5R3zof&usp=drive_fs", imagem: "https://i.ibb.co/n8bChBVK/Condutiv-metro-de-Bancada-com-TDS-DS-703-A-BI.png" },
-  { categoria: "CENTRIFUGAS", nome: "Micro Centrífuga DT-10K", link: "https://drive.google.com/open?id=1YPunpffBDr7pgEEuE8axb-B0qAbSyAMt&usp=drive_fs", imagem: "https://i.ibb.co/d4p9zjK6/Micro-Centr-fuga-DT-10-K.png" },
-  { categoria: "CENTRIFUGAS", nome: "Micro Centrífuga DT-10K+", link: "https://drive.google.com/open?id=1AEZMdRNHUovgSiNj-we4CHe0w6NsjtJM&usp=drive_fs", imagem: "https://i.ibb.co/qFFGRL2Y/Micro-Centr-fuga-DT-10-K.png" },
+  { categoria: "CENTRIFUGAS", nome: "Micro Centrífuga DT-10K", link: "https://drive.google.com/open?id=1YPunpffBDr7pgEEuE8axb-B0qAbSyAMt&usp=drive_fs", imagem: "https://i.ibb.co/d4p9zjK6/Micro-Centr-fuga-DT-10-K.png", descontinuado: true },
+  { categoria: "CENTRIFUGAS", nome: "Micro Centrífuga DT-10K+", link: "https://drive.google.com/open?id=1AEZMdRNHUovgSiNj-we4CHe0w6NsjtJM&usp=drive_fs", imagem: "https://i.ibb.co/qFFGRL2Y/Micro-Centr-fuga-DT-10-K.png", descontinuado: true },
   { categoria: "CENTRIFUGAS", nome: "Micro Centrífuga DT-10KD+", link: "https://drive.google.com/open?id=1EVgvREFQyZRY3i9ID-RumjTwuYVDjdEE&usp=drive_fs", imagem: "https://i.ibb.co/mC2d3C2x/Micro-Centr-fuga-DT-10-KD.png" },
   { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital para Petróleo DT-3500", link: "https://drive.google.com/open?id=1gzUmCXGcnHUK-hcLW1h3OP5_KsD_V0i_&usp=drive_fs", imagem: "https://i.ibb.co/4g7fpPKC/Centr-fuga-Digital-para-Petr-leo-DT-3500.png" },
   { categoria: "CENTRIFUGAS", nome: "Centrífuga Digital DT-4000-12-BI", link: "https://drive.google.com/open?id=1oVoLLNzm8AKIK06AGef8ouJ08cd5RmzT&usp=drive_fs", imagem: "https://i.ibb.co/j91ztdMw/Centr-fuga-Digital-DT-4000-12-BI.png" },

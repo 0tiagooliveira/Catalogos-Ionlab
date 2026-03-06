@@ -164,7 +164,14 @@ export default function App() {
                             )}
                           </div>
                           <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-slate-700 truncate group-hover/item:text-[#1767ae] transition-colors">{item.nome}</span>
+                            <span className="text-sm font-semibold text-slate-700 truncate group-hover/item:text-[#1767ae] transition-colors flex items-center gap-2">
+                              {item.nome}
+                              {item.descontinuado && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-600 border border-red-200">
+                                  DESCONTINUADA
+                                </span>
+                              )}
+                            </span>
                             <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">{item.categoria}</span>
                           </div>
                         </a>
@@ -310,10 +317,15 @@ export default function App() {
 
                   {/* Content */}
                   <div className="p-6 flex flex-col flex-grow bg-white relative z-20">
-                    <div className="mb-3">
+                    <div className="mb-3 flex gap-2">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#1767ae] border border-blue-100/50">
                         {item.categoria}
                       </span>
+                      {item.descontinuado && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 border border-red-200">
+                          DESCONTINUADA
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="text-lg font-bold text-slate-800 leading-snug group-hover:text-[#1767ae] transition-colors mb-4 line-clamp-3">
