@@ -439,7 +439,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Logo & Mobile Toggle */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.location.reload()}>
+              <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <img 
                   src="https://images.tcdn.com.br/files/1357340/themes/65/img/settings/E-commerce.png?1c3e1d532ad395d0887b32bd8aab78c5" 
                   alt="Ionlab Logo" 
