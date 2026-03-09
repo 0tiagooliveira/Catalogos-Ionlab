@@ -38,18 +38,26 @@ export default function App() {
   const lastScrollDepth = useRef<number>(0);
   const viewedProductsRef = useRef<Set<string>>(new Set());
 
+  const enviarPageView = useCallback((pagePath: string, pageTitle: string) => {
+    document.title = pageTitle;
+
+    ReactGA.event('page_view', {
+      page_title: pageTitle,
+      page_path: pagePath,
+      page_location: `${window.location.origin}${pagePath}`,
+      transport_type: 'beacon',
+      idioma: 'pt-BR',
+    });
+  }, []);
+
   const registrarVisualizacaoCatalogo = useCallback((productName: string, category: string) => {
     const categoriaSlug = criarSlug(category);
     const produtoSlug = criarSlug(productName);
     const tituloCatalogo = `Catálogo ${category} - ${productName}`;
     const caminhoVirtual = `/catalogo/${categoriaSlug}/${produtoSlug}`;
 
-    ReactGA.send({
-      hitType: 'pageview',
-      page: caminhoVirtual,
-      title: tituloCatalogo,
-    });
-  }, []);
+    enviarPageView(caminhoVirtual, tituloCatalogo);
+  }, [enviarPageView]);
 
   // Initialize GA4 and track initial pageview with custom parameters
   useEffect(() => {
@@ -59,12 +67,8 @@ export default function App() {
       },
     });
     
-    // Enhanced pageview with custom parameters
-    ReactGA.send({ 
-      hitType: "pageview", 
-      page: window.location.pathname,
-      title: "Catálogos IONLAB"
-    });
+    // Page view inicial da home, no formato nativo GA4.
+    enviarPageView(window.location.pathname, 'Catálogos IONLAB');
 
     // Track session start
     enviarEventoAnalytics('sessao_iniciada', {
@@ -83,7 +87,7 @@ export default function App() {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  }, [enviarPageView]);
 
   // Preload de todas as imagens para evitar flicker durante o scroll.
   useEffect(() => {
