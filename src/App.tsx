@@ -85,6 +85,30 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
+  // Preload de todas as imagens para evitar flicker durante o scroll.
+  useEffect(() => {
+    const imageUrls = Array.from(
+      new Set(
+        catalogData
+          .map((item) => item.imagem)
+          .filter((url): url is string => Boolean(url))
+      )
+    );
+
+    const preloaders = imageUrls.map((url) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      return img;
+    });
+
+    return () => {
+      preloaders.forEach((img) => {
+        img.src = '';
+      });
+    };
+  }, []);
+
   // Track scroll depth
   useEffect(() => {
     const handleScroll = () => {
@@ -361,6 +385,8 @@ export default function App() {
                 src={item.imagem} 
                 alt={item.nome}
                 className="relative z-10 max-w-full max-h-full object-contain shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-500 rounded-sm"
+                loading="eager"
+                decoding="async"
                 referrerPolicy="no-referrer"
               />
             </div>
@@ -475,6 +501,8 @@ export default function App() {
                                 src={item.imagem}
                                 alt={item.nome}
                                 className="w-full h-full object-contain"
+                                loading="eager"
+                                decoding="async"
                                 referrerPolicy="no-referrer"
                               />
                             ) : (
