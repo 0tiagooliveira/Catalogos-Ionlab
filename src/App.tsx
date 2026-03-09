@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { catalogData, type Product } from './data';
 import { Search, ExternalLink, Package, Filter, ChevronDown, ChevronUp, X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,7 +17,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [viewedProducts, setViewedProducts] = useState<Set<string>>(new Set());
+  const viewedProducts = useRef<Set<string>>(new Set());
   const sessionStartTime = useRef<number>(Date.now());
   const lastScrollDepth = useRef<number>(0);
 
@@ -267,10 +267,10 @@ export default function App() {
     });
   };
 
-  const handleProductView = useCallback((productName: string, category: string, position: number) => {
+  const handleProductView = (productName: string, category: string, position: number) => {
     // Track product impression (when it enters viewport)
-    if (!viewedProducts.has(productName)) {
-      setViewedProducts(prev => new Set(prev).add(productName));
+    if (!viewedProducts.current.has(productName)) {
+      viewedProducts.current.add(productName);
       
       ReactGA.event({
         category: "Product",
@@ -283,36 +283,36 @@ export default function App() {
         view_position: position
       });
     }
-  }, [viewedProducts]);
+  };
 
   // Component to track product visibility
   const ProductCard = ({ item, index }: { item: Product; index: number }) => {
     const cardRef = useRef<HTMLAnchorElement>(null);
     const hoverTimeRef = useRef<number>(0);
     const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hasBeenViewed = useRef<boolean>(false);
 
     useEffect(() => {
+      if (!cardRef.current) return;
+
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting) {
+            if (entry.isIntersecting && !hasBeenViewed.current) {
+              hasBeenViewed.current = true;
               handleProductView(item.nome, item.categoria, index + 1);
             }
           });
         },
-        { threshold: 0.5 } // Track when 50% of the card is visible
+        { threshold: 0.5 }
       );
 
-      if (cardRef.current) {
-        observer.observe(cardRef.current);
-      }
+      observer.observe(cardRef.current);
 
       return () => {
-        if (cardRef.current) {
-          observer.unobserve(cardRef.current);
-        }
+        observer.disconnect();
       };
-    }, [item, index]);
+    }, []); // Empty dependencies - only run once
 
     const handleMouseEnter = () => {
       hoverTimeRef.current = Date.now();
