@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { catalogData, type Product } from './data';
 import { Search, ExternalLink, Package, Filter, ChevronDown, ChevronUp, X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,7 +17,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const viewedProducts = useRef<Set<string>>(new Set());
+  const [viewedProducts, setViewedProducts] = useState<Set<string>>(new Set());
   const sessionStartTime = useRef<number>(Date.now());
   const lastScrollDepth = useRef<number>(0);
 
@@ -111,10 +111,7 @@ export default function App() {
           category: "Search",
           action: "Search Term",
           label: searchTerm,
-          value: searchTerm.length,
-          // @ts-ignore
-          search_term: searchTerm,
-          term_length: searchTerm.length
+          value: searchTerm.length
         });
       }
     }, 2000); // Wait 2 seconds after typing stops
@@ -154,27 +151,18 @@ export default function App() {
       return matchesCategory;
     });
 
+    // Track search results
+    if (searchTerm) {
+      ReactGA.event({
+        category: "Search",
+        action: filtered.length > 0 ? "Search Results" : "Search No Results",
+        label: searchTerm,
+        value: filtered.length
+      });
+    }
+
     return filtered;
   }, [searchTerm, selectedCategory]);
-
-  // Track search results separately to avoid re-render issues
-  useEffect(() => {
-    if (searchTerm) {
-      const timer = setTimeout(() => {
-        ReactGA.event({
-          category: "Search",
-          action: filteredData.length > 0 ? "Search Results" : "Search No Results",
-          label: searchTerm,
-          value: filteredData.length,
-          // @ts-ignore
-          search_term: searchTerm,
-          results_count: filteredData.length
-        });
-      }, 2500); // Delay to avoid multiple rapid fire events
-      
-      return () => clearTimeout(timer);
-    }
-  }, [searchTerm, filteredData.length]);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -183,24 +171,18 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Track category selection with more details
-    const productsInCategory = catalogData.filter(item => category === 'Todos' || item.categoria === category).length;
     ReactGA.event({
       category: "Navigation",
       action: "Select Category",
       label: category,
-      value: productsInCategory,
-      // @ts-ignore
-      category_name: category,
-      products_count: productsInCategory
+      value: catalogData.filter(item => category === 'Todos' || item.categoria === category).length
     });
 
     // Track category menu close
     ReactGA.event({
       category: "UI",
       action: "Close Category Menu",
-      label: category,
-      // @ts-ignore
-      selected_category: category
+      label: category
     });
   };
 
@@ -215,17 +197,12 @@ export default function App() {
   };
 
   const handleProductClick = (productName: string, category: string, position: number, isDiscontinued: boolean) => {
-    // Track product click with enhanced data and custom parameters
+    // Track product click with enhanced data
     ReactGA.event({
       category: "Product",
       action: "Click Product",
-      label: productName,
-      value: position,
-      // @ts-ignore - Custom parameters for GA4
-      product_name: productName,
-      product_category: category,
-      product_position: position,
-      is_discontinued: isDiscontinued ? 'yes' : 'no'
+      label: `${category} - ${productName}${isDiscontinued ? ' (Descontinuado)' : ''}`,
+      value: position
     });
 
     // Track if it's a discontinued product
@@ -233,10 +210,7 @@ export default function App() {
       ReactGA.event({
         category: "Product",
         action: "Click Discontinued Product",
-        label: productName,
-        // @ts-ignore
-        product_name: productName,
-        product_category: category
+        label: productName
       });
     }
 
@@ -246,10 +220,7 @@ export default function App() {
       category: "Engagement",
       action: "Time to Product Click",
       label: productName,
-      value: timeToClick,
-      // @ts-ignore
-      product_name: productName,
-      time_seconds: timeToClick
+      value: timeToClick
     });
   };
 
@@ -258,61 +229,53 @@ export default function App() {
     ReactGA.event({
       category: "Autocomplete",
       action: "Click Autocomplete Result",
-      label: productName,
-      value: position,
-      // @ts-ignore
-      product_name: productName,
-      product_category: category,
-      autocomplete_position: position
+      label: `${category} - ${productName}`,
+      value: position
     });
   };
 
-  const handleProductView = (productName: string, category: string, position: number) => {
+  const handleProductView = useCallback((productName: string, category: string, position: number) => {
     // Track product impression (when it enters viewport)
-    if (!viewedProducts.current.has(productName)) {
-      viewedProducts.current.add(productName);
+    if (!viewedProducts.has(productName)) {
+      setViewedProducts(prev => new Set(prev).add(productName));
       
       ReactGA.event({
         category: "Product",
         action: "Product View",
-        label: productName,
-        value: position,
-        // @ts-ignore
-        product_name: productName,
-        product_category: category,
-        view_position: position
+        label: `${category} - ${productName}`,
+        value: position
       });
     }
-  };
+  }, [viewedProducts]);
 
   // Component to track product visibility
   const ProductCard = ({ item, index }: { item: Product; index: number }) => {
     const cardRef = useRef<HTMLAnchorElement>(null);
     const hoverTimeRef = useRef<number>(0);
     const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const hasBeenViewed = useRef<boolean>(false);
 
     useEffect(() => {
-      if (!cardRef.current) return;
-
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting && !hasBeenViewed.current) {
-              hasBeenViewed.current = true;
+            if (entry.isIntersecting) {
               handleProductView(item.nome, item.categoria, index + 1);
             }
           });
         },
-        { threshold: 0.5 }
+        { threshold: 0.5 } // Track when 50% of the card is visible
       );
 
-      observer.observe(cardRef.current);
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
 
       return () => {
-        observer.disconnect();
+        if (cardRef.current) {
+          observer.unobserve(cardRef.current);
+        }
       };
-    }, []); // Empty dependencies - only run once
+    }, [item, index]);
 
     const handleMouseEnter = () => {
       hoverTimeRef.current = Date.now();
@@ -322,12 +285,8 @@ export default function App() {
         ReactGA.event({
           category: "Product",
           action: "Product Hover",
-          label: item.nome,
-          value: index + 1,
-          // @ts-ignore
-          product_name: item.nome,
-          product_category: item.categoria,
-          hover_position: index + 1
+          label: `${item.categoria} - ${item.nome}`,
+          value: index + 1
         });
       }, 2000);
     };
@@ -343,11 +302,7 @@ export default function App() {
           category: "Engagement",
           action: "Product Hover Duration",
           label: item.nome,
-          value: Math.round(hoverDuration / 1000),
-          // @ts-ignore
-          product_name: item.nome,
-          product_category: item.categoria,
-          hover_duration_seconds: Math.round(hoverDuration / 1000)
+          value: Math.round(hoverDuration / 1000)
         });
       }
     };
