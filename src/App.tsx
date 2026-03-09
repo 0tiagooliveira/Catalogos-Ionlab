@@ -12,42 +12,72 @@ import ReactGA from "react-ga4";
 // Initialize GA4 - USE YOUR ACTUAL MEASUREMENT ID
 const GA_MEASUREMENT_ID = "G-4ECHDJJGLQ";
 
+type AnalyticsParams = Record<string, string | number | boolean | undefined>;
+
+const enviarEventoAnalytics = (nomeEvento: string, parametros?: AnalyticsParams) => {
+  ReactGA.event(nomeEvento, {
+    idioma: 'pt-BR',
+    ...parametros,
+  });
+};
+
+const criarSlug = (texto: string) =>
+  texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
 export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [viewedProducts, setViewedProducts] = useState<Set<string>>(new Set());
   const sessionStartTime = useRef<number>(Date.now());
   const lastScrollDepth = useRef<number>(0);
+  const viewedProductsRef = useRef<Set<string>>(new Set());
+
+  const registrarVisualizacaoCatalogo = useCallback((productName: string, category: string) => {
+    const categoriaSlug = criarSlug(category);
+    const produtoSlug = criarSlug(productName);
+    const tituloCatalogo = `Catálogo ${category} - ${productName}`;
+    const caminhoVirtual = `/catalogo/${categoriaSlug}/${produtoSlug}`;
+
+    ReactGA.send({
+      hitType: 'pageview',
+      page: caminhoVirtual,
+      title: tituloCatalogo,
+    });
+  }, []);
 
   // Initialize GA4 and track initial pageview with custom parameters
   useEffect(() => {
-    ReactGA.initialize(GA_MEASUREMENT_ID);
+    ReactGA.initialize(GA_MEASUREMENT_ID, {
+      gaOptions: {
+        debug_mode: true,
+      },
+    });
     
     // Enhanced pageview with custom parameters
     ReactGA.send({ 
       hitType: "pageview", 
       page: window.location.pathname,
-      title: "Catálogos Ionlab"
+      title: "Catálogos IONLAB"
     });
 
     // Track session start
-    ReactGA.event({
-      category: "Session",
-      action: "Session Start",
-      label: new Date().toISOString(),
-      value: 1
+    enviarEventoAnalytics('sessao_iniciada', {
+      data_hora: new Date().toISOString(),
+      valor: 1,
     });
 
     // Track time spent on page when user leaves
     const handleBeforeUnload = () => {
       const timeSpent = Math.round((Date.now() - sessionStartTime.current) / 1000);
-      ReactGA.event({
-        category: "Engagement",
-        action: "Time on Page",
-        label: "Total Session Time",
-        value: timeSpent
+      enviarEventoAnalytics('tempo_na_pagina', {
+        tipo: 'tempo_total_sessao',
+        tempo_segundos: timeSpent,
       });
     };
 
@@ -65,35 +95,23 @@ export default function App() {
 
       // Track every 25% milestone
       if (scrollPercent >= 25 && lastScrollDepth.current < 25) {
-        ReactGA.event({
-          category: "Engagement",
-          action: "Scroll Depth",
-          label: "25%",
-          value: 25
+        enviarEventoAnalytics('profundidade_scroll', {
+          percentual: 25,
         });
         lastScrollDepth.current = 25;
       } else if (scrollPercent >= 50 && lastScrollDepth.current < 50) {
-        ReactGA.event({
-          category: "Engagement",
-          action: "Scroll Depth",
-          label: "50%",
-          value: 50
+        enviarEventoAnalytics('profundidade_scroll', {
+          percentual: 50,
         });
         lastScrollDepth.current = 50;
       } else if (scrollPercent >= 75 && lastScrollDepth.current < 75) {
-        ReactGA.event({
-          category: "Engagement",
-          action: "Scroll Depth",
-          label: "75%",
-          value: 75
+        enviarEventoAnalytics('profundidade_scroll', {
+          percentual: 75,
         });
         lastScrollDepth.current = 75;
       } else if (scrollPercent >= 90 && lastScrollDepth.current < 90) {
-        ReactGA.event({
-          category: "Engagement",
-          action: "Scroll Depth",
-          label: "100%",
-          value: 100
+        enviarEventoAnalytics('profundidade_scroll', {
+          percentual: 100,
         });
         lastScrollDepth.current = 90;
       }
@@ -107,11 +125,9 @@ export default function App() {
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (searchTerm) {
-        ReactGA.event({
-          category: "Search",
-          action: "Search Term",
-          label: searchTerm,
-          value: searchTerm.length
+        enviarEventoAnalytics('busca_termo_digitado', {
+          termo_busca: searchTerm,
+          tamanho_termo: searchTerm.length,
         });
       }
     }, 2000); // Wait 2 seconds after typing stops
@@ -151,18 +167,20 @@ export default function App() {
       return matchesCategory;
     });
 
-    // Track search results
-    if (searchTerm) {
-      ReactGA.event({
-        category: "Search",
-        action: filtered.length > 0 ? "Search Results" : "Search No Results",
-        label: searchTerm,
-        value: filtered.length
-      });
-    }
-
     return filtered;
   }, [searchTerm, selectedCategory]);
+
+  // Track search results outside of useMemo to avoid side effects during render.
+  useEffect(() => {
+    if (!searchTerm) {
+      return;
+    }
+
+    enviarEventoAnalytics(filteredData.length > 0 ? 'busca_com_resultado' : 'busca_sem_resultado', {
+      termo_busca: searchTerm,
+      total_resultados: filteredData.length,
+    });
+  }, [searchTerm, filteredData.length]);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -171,104 +189,92 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Track category selection with more details
-    ReactGA.event({
-      category: "Navigation",
-      action: "Select Category",
-      label: category,
-      value: catalogData.filter(item => category === 'Todos' || item.categoria === category).length
+    enviarEventoAnalytics('categoria_selecionada', {
+      categoria: category,
+      total_itens: catalogData.filter(item => category === 'Todos' || item.categoria === category).length,
     });
 
     // Track category menu close
-    ReactGA.event({
-      category: "UI",
-      action: "Close Category Menu",
-      label: category
+    enviarEventoAnalytics('menu_categorias_fechado', {
+      categoria: category,
     });
   };
 
   const handleCategoryMenuToggle = (isOpen: boolean) => {
     setIsCategoryMenuOpen(isOpen);
     
-    ReactGA.event({
-      category: "UI",
-      action: isOpen ? "Open Category Menu" : "Close Category Menu",
-      label: selectedCategory
+    enviarEventoAnalytics(isOpen ? 'menu_categorias_aberto' : 'menu_categorias_fechado', {
+      categoria_atual: selectedCategory,
     });
   };
 
   const handleProductClick = (productName: string, category: string, position: number, isDiscontinued: boolean, catalogLink: string) => {
+    // Envia page_view virtual para aparecer em tempo real no card
+    // "Visualizações por Título da página e nome da tela" do GA4.
+    registrarVisualizacaoCatalogo(productName, category);
+
     // Track specific catalog click
-    ReactGA.event({
-      category: "Catalog",
-      action: "Catalog Click",
-      label: productName,
-      value: position
+    enviarEventoAnalytics('catalogo_clicado', {
+      nome_produto: productName,
+      posicao: position,
     });
 
     // Send catalog URL as custom parameter
-    ReactGA.event({
-      category: "Catalog",
-      action: "Catalog Open",
-      label: `${productName} | ${catalogLink}`
+    enviarEventoAnalytics('catalogo_aberto', {
+      nome_produto: productName,
+      url_catalogo: catalogLink,
     });
 
     // Track product click with enhanced data
-    ReactGA.event({
-      category: "Product",
-      action: "Click Product",
-      label: `${category} - ${productName}${isDiscontinued ? ' (Descontinuado)' : ''}`,
-      value: position
+    enviarEventoAnalytics('produto_clicado', {
+      categoria: category,
+      nome_produto: productName,
+      descontinuado: isDiscontinued,
+      posicao: position,
     });
 
     // Track if it's a discontinued product
     if (isDiscontinued) {
-      ReactGA.event({
-        category: "Product",
-        action: "Click Discontinued Product",
-        label: productName
+      enviarEventoAnalytics('produto_descontinuado_clicado', {
+        nome_produto: productName,
       });
     }
 
     // Track time to click (engagement metric)
     const timeToClick = Math.round((Date.now() - sessionStartTime.current) / 1000);
-    ReactGA.event({
-      category: "Engagement",
-      action: "Time to Product Click",
-      label: productName,
-      value: timeToClick
+    enviarEventoAnalytics('tempo_ate_clique_produto', {
+      nome_produto: productName,
+      tempo_segundos: timeToClick,
     });
   };
 
   const handleAutocompleteClick = (productName: string, category: string, position: number, catalogLink: string) => {
     // Track autocomplete interaction
-    ReactGA.event({
-      category: "Autocomplete",
-      action: "Click Autocomplete Result",
-      label: `${category} - ${productName}`,
-      value: position
+    enviarEventoAnalytics('autocomplete_resultado_clicado', {
+      categoria: category,
+      nome_produto: productName,
+      posicao: position,
     });
 
     // Track specific catalog from autocomplete
-    ReactGA.event({
-      category: "Catalog",
-      action: "Catalog Click from Autocomplete",
-      label: `${productName} | ${catalogLink}`
+    enviarEventoAnalytics('catalogo_clicado_por_autocomplete', {
+      nome_produto: productName,
+      url_catalogo: catalogLink,
     });
   };
 
   const handleProductView = useCallback((productName: string, category: string, position: number) => {
     // Track product impression (when it enters viewport)
-    if (!viewedProducts.has(productName)) {
-      setViewedProducts(prev => new Set(prev).add(productName));
+    if (!viewedProductsRef.current.has(productName)) {
+      viewedProductsRef.current.add(productName);
       
-      ReactGA.event({
-        category: "Product",
-        action: "Product View",
-        label: `${category} - ${productName}`,
-        value: position
+      enviarEventoAnalytics('produto_visualizado', {
+        categoria: category,
+        nome_produto: productName,
+        posicao: position,
       });
     }
-  }, [viewedProducts]);
+  }, []);
 
   // Component to track product visibility
   const ProductCard = ({ item, index }: { item: Product; index: number }) => {
@@ -308,11 +314,10 @@ export default function App() {
       
       // Track hover if it lasts more than 2 seconds
       hoverTimerRef.current = setTimeout(() => {
-        ReactGA.event({
-          category: "Product",
-          action: "Product Hover",
-          label: `${item.categoria} - ${item.nome}`,
-          value: index + 1
+        enviarEventoAnalytics('produto_hover', {
+          categoria: item.categoria,
+          nome_produto: item.nome,
+          posicao: index + 1,
         });
       }, 2000);
     };
@@ -324,11 +329,9 @@ export default function App() {
       
       const hoverDuration = Date.now() - hoverTimeRef.current;
       if (hoverDuration > 500) { // Track hovers longer than 0.5s
-        ReactGA.event({
-          category: "Engagement",
-          action: "Product Hover Duration",
-          label: item.nome,
-          value: Math.round(hoverDuration / 1000)
+        enviarEventoAnalytics('duracao_hover_produto', {
+          nome_produto: item.nome,
+          tempo_segundos: Math.round(hoverDuration / 1000),
         });
       }
     };
@@ -336,10 +339,7 @@ export default function App() {
     return (
       <motion.a
         ref={cardRef}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.25 }}
+        initial={false}
         href={item.link}
         target="_blank"
         rel="noopener noreferrer"
@@ -595,13 +595,11 @@ export default function App() {
             layout
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
           >
-            <AnimatePresence>
-              {filteredData.map((item, index) => (
-                <div key={item.nome}>
-                  <ProductCard item={item} index={index} />
-                </div>
-              ))}
-            </AnimatePresence>
+            {filteredData.map((item, index) => (
+              <div key={item.nome}>
+                <ProductCard item={item} index={index} />
+              </div>
+            ))}
           </motion.div>
         ) : (
           <motion.div 
@@ -622,10 +620,8 @@ export default function App() {
                 setSelectedCategory('Todos');
                 
                 // Track clear filters action
-                ReactGA.event({
-                  category: "UI",
-                  action: "Clear All Filters",
-                  label: "No Results"
+                enviarEventoAnalytics('filtros_limpos', {
+                  origem: 'sem_resultados',
                 });
               }}
               className="px-8 py-3 bg-[#1767ae] text-white rounded-xl font-semibold hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-1"
