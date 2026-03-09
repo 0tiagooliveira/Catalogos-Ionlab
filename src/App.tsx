@@ -111,7 +111,10 @@ export default function App() {
           category: "Search",
           action: "Search Term",
           label: searchTerm,
-          value: searchTerm.length
+          value: searchTerm.length,
+          // @ts-ignore
+          search_term: searchTerm,
+          term_length: searchTerm.length
         });
       }
     }, 2000); // Wait 2 seconds after typing stops
@@ -157,7 +160,10 @@ export default function App() {
         category: "Search",
         action: filtered.length > 0 ? "Search Results" : "Search No Results",
         label: searchTerm,
-        value: filtered.length
+        value: filtered.length,
+        // @ts-ignore
+        search_term: searchTerm,
+        results_count: filtered.length
       });
     }
 
@@ -171,18 +177,24 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Track category selection with more details
+    const productsInCategory = catalogData.filter(item => category === 'Todos' || item.categoria === category).length;
     ReactGA.event({
       category: "Navigation",
       action: "Select Category",
       label: category,
-      value: catalogData.filter(item => category === 'Todos' || item.categoria === category).length
+      value: productsInCategory,
+      // @ts-ignore
+      category_name: category,
+      products_count: productsInCategory
     });
 
     // Track category menu close
     ReactGA.event({
       category: "UI",
       action: "Close Category Menu",
-      label: category
+      label: category,
+      // @ts-ignore
+      selected_category: category
     });
   };
 
@@ -197,12 +209,17 @@ export default function App() {
   };
 
   const handleProductClick = (productName: string, category: string, position: number, isDiscontinued: boolean) => {
-    // Track product click with enhanced data
+    // Track product click with enhanced data and custom parameters
     ReactGA.event({
       category: "Product",
       action: "Click Product",
-      label: `${category} - ${productName}${isDiscontinued ? ' (Descontinuado)' : ''}`,
-      value: position
+      label: productName,
+      value: position,
+      // @ts-ignore - Custom parameters for GA4
+      product_name: productName,
+      product_category: category,
+      product_position: position,
+      is_discontinued: isDiscontinued ? 'yes' : 'no'
     });
 
     // Track if it's a discontinued product
@@ -210,7 +227,10 @@ export default function App() {
       ReactGA.event({
         category: "Product",
         action: "Click Discontinued Product",
-        label: productName
+        label: productName,
+        // @ts-ignore
+        product_name: productName,
+        product_category: category
       });
     }
 
@@ -220,7 +240,10 @@ export default function App() {
       category: "Engagement",
       action: "Time to Product Click",
       label: productName,
-      value: timeToClick
+      value: timeToClick,
+      // @ts-ignore
+      product_name: productName,
+      time_seconds: timeToClick
     });
   };
 
@@ -229,8 +252,12 @@ export default function App() {
     ReactGA.event({
       category: "Autocomplete",
       action: "Click Autocomplete Result",
-      label: `${category} - ${productName}`,
-      value: position
+      label: productName,
+      value: position,
+      // @ts-ignore
+      product_name: productName,
+      product_category: category,
+      autocomplete_position: position
     });
   };
 
@@ -242,8 +269,12 @@ export default function App() {
       ReactGA.event({
         category: "Product",
         action: "Product View",
-        label: `${category} - ${productName}`,
-        value: position
+        label: productName,
+        value: position,
+        // @ts-ignore
+        product_name: productName,
+        product_category: category,
+        view_position: position
       });
     }
   }, [viewedProducts]);
@@ -285,8 +316,12 @@ export default function App() {
         ReactGA.event({
           category: "Product",
           action: "Product Hover",
-          label: `${item.categoria} - ${item.nome}`,
-          value: index + 1
+          label: item.nome,
+          value: index + 1,
+          // @ts-ignore
+          product_name: item.nome,
+          product_category: item.categoria,
+          hover_position: index + 1
         });
       }, 2000);
     };
@@ -302,7 +337,11 @@ export default function App() {
           category: "Engagement",
           action: "Product Hover Duration",
           label: item.nome,
-          value: Math.round(hoverDuration / 1000)
+          value: Math.round(hoverDuration / 1000),
+          // @ts-ignore
+          product_name: item.nome,
+          product_category: item.categoria,
+          hover_duration_seconds: Math.round(hoverDuration / 1000)
         });
       }
     };
