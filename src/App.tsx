@@ -3,25 +3,104 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect } from 'react';
-import { catalogData } from './data';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { catalogData, type Product } from './data';
 import { Search, ExternalLink, Package, Filter, ChevronDown, ChevronUp, X, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactGA from "react-ga4";
 
-// Initialize GA4 - REPLACE 'G-XXXXXXXXXX' WITH YOUR ACTUAL MEASUREMENT ID
-const GA_MEASUREMENT_ID = "G-XXXXXXXXXX";
+// Initialize GA4 - USE YOUR ACTUAL MEASUREMENT ID
+const GA_MEASUREMENT_ID = "G-4ECHDJJGLQ";
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [viewedProducts, setViewedProducts] = useState<Set<string>>(new Set());
+  const sessionStartTime = useRef<number>(Date.now());
+  const lastScrollDepth = useRef<number>(0);
 
-  // Initialize GA4 and track initial pageview
+  // Initialize GA4 and track initial pageview with custom parameters
   useEffect(() => {
     ReactGA.initialize(GA_MEASUREMENT_ID);
-    ReactGA.send({ hitType: "pageview", page: window.location.pathname });
+    
+    // Enhanced pageview with custom parameters
+    ReactGA.send({ 
+      hitType: "pageview", 
+      page: window.location.pathname,
+      title: "Catálogos Ionlab"
+    });
+
+    // Track session start
+    ReactGA.event({
+      category: "Session",
+      action: "Session Start",
+      label: new Date().toISOString(),
+      value: 1
+    });
+
+    // Track time spent on page when user leaves
+    const handleBeforeUnload = () => {
+      const timeSpent = Math.round((Date.now() - sessionStartTime.current) / 1000);
+      ReactGA.event({
+        category: "Engagement",
+        action: "Time on Page",
+        label: "Total Session Time",
+        value: timeSpent
+      });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Track scroll depth
+  useEffect(() => {
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight - windowHeight;
+      const scrolled = window.scrollY;
+      const scrollPercent = Math.round((scrolled / documentHeight) * 100);
+
+      // Track every 25% milestone
+      if (scrollPercent >= 25 && lastScrollDepth.current < 25) {
+        ReactGA.event({
+          category: "Engagement",
+          action: "Scroll Depth",
+          label: "25%",
+          value: 25
+        });
+        lastScrollDepth.current = 25;
+      } else if (scrollPercent >= 50 && lastScrollDepth.current < 50) {
+        ReactGA.event({
+          category: "Engagement",
+          action: "Scroll Depth",
+          label: "50%",
+          value: 50
+        });
+        lastScrollDepth.current = 50;
+      } else if (scrollPercent >= 75 && lastScrollDepth.current < 75) {
+        ReactGA.event({
+          category: "Engagement",
+          action: "Scroll Depth",
+          label: "75%",
+          value: 75
+        });
+        lastScrollDepth.current = 75;
+      } else if (scrollPercent >= 90 && lastScrollDepth.current < 90) {
+        ReactGA.event({
+          category: "Engagement",
+          action: "Scroll Depth",
+          label: "100%",
+          value: 100
+        });
+        lastScrollDepth.current = 90;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Track search terms (debounced to avoid spamming events while typing)
@@ -32,6 +111,7 @@ export default function App() {
           category: "Search",
           action: "Search Term",
           label: searchTerm,
+          value: searchTerm.length
         });
       }
     }, 2000); // Wait 2 seconds after typing stops
@@ -52,7 +132,7 @@ export default function App() {
       return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     };
 
-    return catalogData.filter((item) => {
+    const filtered = catalogData.filter((item) => {
       const normalizedSearchTerm = removeAccents(searchTerm.toLowerCase());
       const normalizedNome = removeAccents(item.nome.toLowerCase());
       const normalizedCategoria = removeAccents(item.categoria.toLowerCase());
@@ -70,6 +150,18 @@ export default function App() {
 
       return matchesCategory;
     });
+
+    // Track search results
+    if (searchTerm) {
+      ReactGA.event({
+        category: "Search",
+        action: filtered.length > 0 ? "Search Results" : "Search No Results",
+        label: searchTerm,
+        value: filtered.length
+      });
+    }
+
+    return filtered;
   }, [searchTerm, selectedCategory]);
 
   const handleCategorySelect = (category: string) => {
@@ -78,21 +170,210 @@ export default function App() {
     setIsCategoryMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Track category selection
+    // Track category selection with more details
     ReactGA.event({
       category: "Navigation",
       action: "Select Category",
       label: category,
+      value: catalogData.filter(item => category === 'Todos' || item.categoria === category).length
+    });
+
+    // Track category menu close
+    ReactGA.event({
+      category: "UI",
+      action: "Close Category Menu",
+      label: category
     });
   };
 
-  const handleProductClick = (productName: string, category: string) => {
+  const handleCategoryMenuToggle = (isOpen: boolean) => {
+    setIsCategoryMenuOpen(isOpen);
+    
+    ReactGA.event({
+      category: "UI",
+      action: isOpen ? "Open Category Menu" : "Close Category Menu",
+      label: selectedCategory
+    });
+  };
+
+  const handleProductClick = (productName: string, category: string, position: number, isDiscontinued: boolean) => {
+    // Track product click with enhanced data
     ReactGA.event({
       category: "Product",
       action: "Click Product",
-      label: productName,
-      // Custom dimension or metric can be added here if configured in GA4
+      label: `${category} - ${productName}${isDiscontinued ? ' (Descontinuado)' : ''}`,
+      value: position
     });
+
+    // Track if it's a discontinued product
+    if (isDiscontinued) {
+      ReactGA.event({
+        category: "Product",
+        action: "Click Discontinued Product",
+        label: productName
+      });
+    }
+
+    // Track time to click (engagement metric)
+    const timeToClick = Math.round((Date.now() - sessionStartTime.current) / 1000);
+    ReactGA.event({
+      category: "Engagement",
+      action: "Time to Product Click",
+      label: productName,
+      value: timeToClick
+    });
+  };
+
+  const handleAutocompleteClick = (productName: string, category: string, position: number) => {
+    // Track autocomplete interaction
+    ReactGA.event({
+      category: "Autocomplete",
+      action: "Click Autocomplete Result",
+      label: `${category} - ${productName}`,
+      value: position
+    });
+  };
+
+  const handleProductView = useCallback((productName: string, category: string, position: number) => {
+    // Track product impression (when it enters viewport)
+    if (!viewedProducts.has(productName)) {
+      setViewedProducts(prev => new Set(prev).add(productName));
+      
+      ReactGA.event({
+        category: "Product",
+        action: "Product View",
+        label: `${category} - ${productName}`,
+        value: position
+      });
+    }
+  }, [viewedProducts]);
+
+  // Component to track product visibility
+  const ProductCard = ({ item, index }: { item: Product; index: number }) => {
+    const cardRef = useRef<HTMLAnchorElement>(null);
+    const hoverTimeRef = useRef<number>(0);
+    const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              handleProductView(item.nome, item.categoria, index + 1);
+            }
+          });
+        },
+        { threshold: 0.5 } // Track when 50% of the card is visible
+      );
+
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+      }
+
+      return () => {
+        if (cardRef.current) {
+          observer.unobserve(cardRef.current);
+        }
+      };
+    }, [item, index]);
+
+    const handleMouseEnter = () => {
+      hoverTimeRef.current = Date.now();
+      
+      // Track hover if it lasts more than 2 seconds
+      hoverTimerRef.current = setTimeout(() => {
+        ReactGA.event({
+          category: "Product",
+          action: "Product Hover",
+          label: `${item.categoria} - ${item.nome}`,
+          value: index + 1
+        });
+      }, 2000);
+    };
+
+    const handleMouseLeave = () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+      
+      const hoverDuration = Date.now() - hoverTimeRef.current;
+      if (hoverDuration > 500) { // Track hovers longer than 0.5s
+        ReactGA.event({
+          category: "Engagement",
+          action: "Product Hover Duration",
+          label: item.nome,
+          value: Math.round(hoverDuration / 1000)
+        });
+      }
+    };
+
+    return (
+      <motion.a
+        ref={cardRef}
+        layout="position"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.25 }}
+        href={item.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => handleProductClick(item.nome, item.categoria, index + 1, item.descontinuado || false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 border border-slate-100 transition-all duration-500 flex flex-col h-full relative overflow-hidden"
+      >
+        {/* Image Container - Vertical Catalog Style */}
+        <div className="aspect-square w-full bg-slate-50 relative overflow-hidden p-6 flex items-center justify-center group-hover:bg-white transition-colors duration-500">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#1767ae_1px,transparent_1px)] [background-size:16px_16px]" />
+          
+          {item.imagem ? (
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Shadow for the document feel */}
+              <div className="absolute inset-4 bg-black/20 blur-xl rounded-lg transform translate-y-4 scale-90 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img 
+                src={item.imagem} 
+                alt={item.nome}
+                className="relative z-10 max-w-full max-h-full object-contain shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-500 rounded-sm"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+               <Package className="h-10 w-10 text-slate-300 group-hover:text-[#1767ae] transition-colors" />
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-6 flex flex-col flex-grow bg-white relative z-20">
+          <div className="mb-3 flex gap-2">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#1767ae] border border-blue-100/50">
+              {item.categoria}
+            </span>
+            {item.descontinuado && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 border border-red-200">
+                DESCONTINUADA
+              </span>
+            )}
+          </div>
+
+          <h3 className="text-lg font-bold text-slate-800 leading-snug group-hover:text-[#1767ae] transition-colors mb-4 line-clamp-3">
+            {item.nome}
+          </h3>
+          
+          <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between group/btn">
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
+              Ver Detalhes
+            </span>
+            <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#1767ae] group-hover:text-white transition-all duration-300 transform group-hover:rotate-45">
+              <ArrowRight className="h-4 w-4" />
+            </div>
+          </div>
+        </div>
+      </motion.a>
+    );
   };
 
   return (
@@ -114,7 +395,7 @@ export default function App() {
               
               {/* Mobile Filter Toggle */}
               <button 
-                onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
+                onClick={() => handleCategoryMenuToggle(!isCategoryMenuOpen)}
                 className={`md:hidden p-2.5 rounded-xl transition-all duration-200 active:scale-95 ${
                   isCategoryMenuOpen || selectedCategory !== 'Todos'
                     ? 'bg-[#1767ae] text-white shadow-md shadow-blue-500/20' 
@@ -151,13 +432,16 @@ export default function App() {
                       transition={{ duration: 0.2 }}
                       className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 max-h-[400px] overflow-y-auto custom-scrollbar"
                     >
-                      {filteredData.slice(0, 6).map((item) => (
+                      {filteredData.slice(0, 6).map((item, idx) => (
                         <a
                           key={item.nome}
                           href={item.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={() => handleProductClick(item.nome, item.categoria)}
+                          onClick={() => {
+                            handleAutocompleteClick(item.nome, item.categoria, idx + 1);
+                            handleProductClick(item.nome, item.categoria, idx + 1, item.descontinuado || false);
+                          }}
                           className="flex items-center gap-4 p-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 group/item"
                         >
                           <div className="w-12 h-12 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center overflow-hidden border border-slate-100">
@@ -197,7 +481,7 @@ export default function App() {
 
               {/* Desktop Filter Button */}
               <button
-                onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
+                onClick={() => handleCategoryMenuToggle(!isCategoryMenuOpen)}
                 className={`hidden md:flex items-center gap-2.5 px-6 py-3 rounded-2xl font-medium transition-all duration-300 shadow-sm hover:shadow-md active:scale-95 ${
                   isCategoryMenuOpen || selectedCategory !== 'Todos'
                     ? 'bg-[#1767ae] text-white border border-transparent shadow-[#1767ae]/20'
@@ -231,7 +515,7 @@ export default function App() {
                     Navegar por Categorias
                   </h3>
                   <button 
-                    onClick={() => setIsCategoryMenuOpen(false)}
+                    onClick={() => handleCategoryMenuToggle(false)}
                     className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-100 rounded-full transition-colors"
                   >
                     <X className="h-6 w-6" />
@@ -287,70 +571,10 @@ export default function App() {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
           >
             <AnimatePresence>
-              {filteredData.map((item) => (
-                <motion.a
-                  layout="position"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.25 }}
-                  key={item.nome}
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleProductClick(item.nome, item.categoria)}
-                  className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 border border-slate-100 transition-all duration-500 flex flex-col h-full relative overflow-hidden"
-                >
-                  {/* Image Container - Vertical Catalog Style */}
-                  <div className="aspect-square w-full bg-slate-50 relative overflow-hidden p-6 flex items-center justify-center group-hover:bg-white transition-colors duration-500">
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#1767ae_1px,transparent_1px)] [background-size:16px_16px]" />
-                    
-                    {item.imagem ? (
-                      <div className="relative w-full h-full flex items-center justify-center">
-                        {/* Shadow for the document feel */}
-                        <div className="absolute inset-4 bg-black/20 blur-xl rounded-lg transform translate-y-4 scale-90 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <img 
-                          src={item.imagem} 
-                          alt={item.nome}
-                          className="relative z-10 max-w-full max-h-full object-contain shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-500 rounded-sm"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                         <Package className="h-10 w-10 text-slate-300 group-hover:text-[#1767ae] transition-colors" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6 flex flex-col flex-grow bg-white relative z-20">
-                    <div className="mb-3 flex gap-2">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#1767ae] border border-blue-100/50">
-                        {item.categoria}
-                      </span>
-                      {item.descontinuado && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 border border-red-200">
-                          DESCONTINUADA
-                        </span>
-                      )}
-                    </div>
-
-                    <h3 className="text-lg font-bold text-slate-800 leading-snug group-hover:text-[#1767ae] transition-colors mb-4 line-clamp-3">
-                      {item.nome}
-                    </h3>
-                    
-                    <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between group/btn">
-                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-600 transition-colors">
-                        Ver Detalhes
-                      </span>
-                      <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#1767ae] group-hover:text-white transition-all duration-300 transform group-hover:rotate-45">
-                        <ArrowRight className="h-4 w-4" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.a>
+              {filteredData.map((item, index) => (
+                <div key={item.nome}>
+                  <ProductCard item={item} index={index} />
+                </div>
               ))}
             </AnimatePresence>
           </motion.div>
@@ -371,6 +595,13 @@ export default function App() {
               onClick={() => {
                 setSearchTerm('');
                 setSelectedCategory('Todos');
+                
+                // Track clear filters action
+                ReactGA.event({
+                  category: "UI",
+                  action: "Clear All Filters",
+                  label: "No Results"
+                });
               }}
               className="px-8 py-3 bg-[#1767ae] text-white rounded-xl font-semibold hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-1"
             >
