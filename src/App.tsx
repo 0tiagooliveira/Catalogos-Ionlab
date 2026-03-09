@@ -196,7 +196,22 @@ export default function App() {
     });
   };
 
-  const handleProductClick = (productName: string, category: string, position: number, isDiscontinued: boolean) => {
+  const handleProductClick = (productName: string, category: string, position: number, isDiscontinued: boolean, catalogLink: string) => {
+    // Track specific catalog click
+    ReactGA.event({
+      category: "Catalog",
+      action: "Catalog Click",
+      label: productName,
+      value: position
+    });
+
+    // Send catalog URL as custom parameter
+    ReactGA.event({
+      category: "Catalog",
+      action: "Catalog Open",
+      label: `${productName} | ${catalogLink}`
+    });
+
     // Track product click with enhanced data
     ReactGA.event({
       category: "Product",
@@ -224,13 +239,20 @@ export default function App() {
     });
   };
 
-  const handleAutocompleteClick = (productName: string, category: string, position: number) => {
+  const handleAutocompleteClick = (productName: string, category: string, position: number, catalogLink: string) => {
     // Track autocomplete interaction
     ReactGA.event({
       category: "Autocomplete",
       action: "Click Autocomplete Result",
       label: `${category} - ${productName}`,
       value: position
+    });
+
+    // Track specific catalog from autocomplete
+    ReactGA.event({
+      category: "Catalog",
+      action: "Catalog Click from Autocomplete",
+      label: `${productName} | ${catalogLink}`
     });
   };
 
@@ -253,29 +275,33 @@ export default function App() {
     const cardRef = useRef<HTMLAnchorElement>(null);
     const hoverTimeRef = useRef<number>(0);
     const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const observerRef = useRef<IntersectionObserver | null>(null);
 
     useEffect(() => {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              handleProductView(item.nome, item.categoria, index + 1);
-            }
-          });
-        },
-        { threshold: 0.5 } // Track when 50% of the card is visible
-      );
+      if (!observerRef.current) {
+        observerRef.current = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                handleProductView(item.nome, item.categoria, index + 1);
+              }
+            });
+          },
+          { threshold: 0.5 } // Track when 50% of the card is visible
+        );
+      }
 
-      if (cardRef.current) {
-        observer.observe(cardRef.current);
+      const currentCard = cardRef.current;
+      if (currentCard && observerRef.current) {
+        observerRef.current.observe(currentCard);
       }
 
       return () => {
-        if (cardRef.current) {
-          observer.unobserve(cardRef.current);
+        if (currentCard && observerRef.current) {
+          observerRef.current.unobserve(currentCard);
         }
       };
-    }, [item, index]);
+    }, []);
 
     const handleMouseEnter = () => {
       hoverTimeRef.current = Date.now();
@@ -310,7 +336,6 @@ export default function App() {
     return (
       <motion.a
         ref={cardRef}
-        layout="position"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
@@ -318,7 +343,7 @@ export default function App() {
         href={item.link}
         target="_blank"
         rel="noopener noreferrer"
-        onClick={() => handleProductClick(item.nome, item.categoria, index + 1, item.descontinuado || false)}
+        onClick={() => handleProductClick(item.nome, item.categoria, index + 1, item.descontinuado || false, item.link)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-blue-900/10 border border-slate-100 transition-all duration-500 flex flex-col h-full relative overflow-hidden"
@@ -439,8 +464,8 @@ export default function App() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => {
-                            handleAutocompleteClick(item.nome, item.categoria, idx + 1);
-                            handleProductClick(item.nome, item.categoria, idx + 1, item.descontinuado || false);
+                            handleAutocompleteClick(item.nome, item.categoria, idx + 1, item.link);
+                            handleProductClick(item.nome, item.categoria, idx + 1, item.descontinuado || false, item.link);
                           }}
                           className="flex items-center gap-4 p-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 group/item"
                         >
