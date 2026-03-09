@@ -154,21 +154,27 @@ export default function App() {
       return matchesCategory;
     });
 
-    // Track search results
-    if (searchTerm) {
-      ReactGA.event({
-        category: "Search",
-        action: filtered.length > 0 ? "Search Results" : "Search No Results",
-        label: searchTerm,
-        value: filtered.length,
-        // @ts-ignore
-        search_term: searchTerm,
-        results_count: filtered.length
-      });
-    }
-
     return filtered;
   }, [searchTerm, selectedCategory]);
+
+  // Track search results separately to avoid re-render issues
+  useEffect(() => {
+    if (searchTerm) {
+      const timer = setTimeout(() => {
+        ReactGA.event({
+          category: "Search",
+          action: filteredData.length > 0 ? "Search Results" : "Search No Results",
+          label: searchTerm,
+          value: filteredData.length,
+          // @ts-ignore
+          search_term: searchTerm,
+          results_count: filteredData.length
+        });
+      }, 2500); // Delay to avoid multiple rapid fire events
+      
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, filteredData.length]);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
